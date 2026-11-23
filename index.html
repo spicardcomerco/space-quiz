@@ -470,6 +470,90 @@
 
     .result .actions { justify-content: center; margin-top: 2px; }
 
+    .review {
+      width: 100%;
+      margin-top: 30px;
+      text-align: left;
+    }
+
+    .review-title {
+      margin-bottom: 12px;
+      font-size: 20px;
+      letter-spacing: -.02em;
+    }
+
+    .review-list {
+      display: grid;
+      gap: 12px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .review-entry {
+      padding: 15px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface-soft);
+    }
+
+    .review-entry.correct-entry {
+      border-left: 4px solid var(--correct);
+    }
+
+    .review-entry.incorrect-entry {
+      border-left: 4px solid var(--wrong);
+    }
+
+    .review-entry h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      line-height: 1.35;
+    }
+
+    .review-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin: 0 0 10px;
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .correct-entry .review-status { color: var(--correct); }
+    .incorrect-entry .review-status { color: var(--wrong); }
+
+    .review-entry dl {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+    }
+
+    .review-entry dl div {
+      display: grid;
+      grid-template-columns: minmax(82px, auto) 1fr;
+      gap: 10px;
+    }
+
+    .review-entry dt {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .review-entry dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .review-fact {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
     .sr-only {
       position: absolute;
       width: 1px;
@@ -507,6 +591,8 @@
       .mission-readout { gap: 9px; padding-inline: 10px; }
       .score-pill { gap: 6px; padding-inline: 10px; }
       #question-count { font-size: 12px; }
+      .review-entry { padding: 13px; }
+      .review-entry dl div { grid-template-columns: 1fr; gap: 2px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -566,6 +652,10 @@
       <p class="final-score" id="final-score">0/10</p>
       <p class="score-caption">correct answers</p>
       <p class="result-copy" id="result-copy"></p>
+      <section class="review" id="answer-review" aria-labelledby="review-title">
+        <h2 class="review-title" id="review-title">Review your answers</h2>
+        <ol class="review-list" id="review-list"></ol>
+      </section>
       <div class="actions"><button class="secondary" id="restart-button" type="button">Play again <span aria-hidden="true">↻</span></button></div>
     </section>
   </main>
@@ -598,6 +688,7 @@
     let questionIndex = 0;
     let score = 0;
     let answered = false;
+    let selectedAnswers = [];
 
     function showQuestion() {
       const current = questions[questionIndex];
@@ -626,6 +717,7 @@
       if (answered) return;
       answered = true;
       const current = questions[questionIndex];
+      selectedAnswers[questionIndex] = selectedIndex;
       const buttons = [...answersBox.querySelectorAll(".answer")];
       buttons.forEach(button => { button.disabled = true; });
       buttons[current.correct].classList.add("correct");
@@ -663,7 +755,51 @@
       document.querySelector("#result-title").textContent = reaction[1];
       document.querySelector("#final-score").textContent = `${score}/${questions.length}`;
       document.querySelector("#result-copy").textContent = reaction[2];
+      renderReview();
       document.querySelector("#restart-button").focus();
+    }
+
+    function renderReview() {
+      const reviewList = document.querySelector("#review-list");
+      reviewList.replaceChildren();
+
+      questions.forEach((current, index) => {
+        const selectedIndex = selectedAnswers[index];
+        const isCorrect = selectedIndex === current.correct;
+        const entry = document.createElement("li");
+        entry.className = `review-entry ${isCorrect ? "correct-entry" : "incorrect-entry"}`;
+
+        const status = document.createElement("p");
+        status.className = "review-status";
+        status.textContent = isCorrect ? "✓ Correct" : "× Incorrect";
+
+        const questionHeading = document.createElement("h3");
+        questionHeading.textContent = `${index + 1}. ${current.question}`;
+
+        const details = document.createElement("dl");
+        const selectedRow = document.createElement("div");
+        const selectedTerm = document.createElement("dt");
+        selectedTerm.textContent = "Your answer";
+        const selectedDescription = document.createElement("dd");
+        selectedDescription.textContent = current.answers[selectedIndex];
+        selectedRow.append(selectedTerm, selectedDescription);
+
+        const correctRow = document.createElement("div");
+        const correctTerm = document.createElement("dt");
+        correctTerm.textContent = "Correct answer";
+        const correctDescription = document.createElement("dd");
+        correctDescription.textContent = current.answers[current.correct];
+        correctRow.append(correctTerm, correctDescription);
+
+        details.append(selectedRow, correctRow);
+
+        const fact = document.createElement("p");
+        fact.className = "review-fact";
+        fact.textContent = `Fact: ${current.fact}`;
+
+        entry.append(status, questionHeading, details, fact);
+        reviewList.append(entry);
+      });
     }
 
     document.querySelector("#start-button").addEventListener("click", () => {
@@ -686,6 +822,8 @@
     document.querySelector("#restart-button").addEventListener("click", () => {
       questionIndex = 0;
       score = 0;
+      selectedAnswers = [];
+      document.querySelector("#review-list").replaceChildren();
       results.classList.add("hidden");
       quiz.classList.remove("hidden");
       showQuestion();
