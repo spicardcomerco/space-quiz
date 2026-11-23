@@ -276,21 +276,29 @@
       padding: 8px 13px;
     }
 
+    .score-divider {
+      width: 1px;
+      height: 26px;
+      background: var(--line);
+    }
+
     .score-icon {
       color: var(--accent);
       font-size: 15px;
       line-height: 1;
     }
 
-    #score {
+    #score, #streak {
       min-width: 1ch;
       color: var(--ink);
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 18px;
       font-weight: 850;
       font-variant-numeric: tabular-nums;
       line-height: 1;
     }
+
+    #score { font-size: 18px; }
+    #streak { font-size: 16px; }
 
     .score-unit {
       align-self: flex-end;
@@ -540,11 +548,14 @@
             <span id="question-count">Question 1 of 10</span>
           </div>
         </div>
-        <div class="score-pill" role="group" aria-label="Current score">
+        <div class="score-pill" role="group" aria-label="Current score and correct-answer streak">
           <span class="score-icon" aria-hidden="true">✦</span>
           <span class="score-label" aria-hidden="true">Score</span>
           <output id="score" aria-label="Score" aria-live="polite" aria-atomic="true">0</output>
           <span class="score-unit" aria-hidden="true">PTS</span>
+          <span class="score-divider" aria-hidden="true"></span>
+          <span class="score-label" aria-hidden="true">Streak</span>
+          <output id="streak" aria-label="Correct-answer streak" aria-live="polite" aria-atomic="true">0</output>
         </div>
       </div>
       <div class="progress-track" id="progress-track" role="progressbar" aria-label="Quiz progress" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
@@ -589,6 +600,7 @@
     const results = document.querySelector("#results");
     const countLabel = document.querySelector("#question-count");
     const scoreLabel = document.querySelector("#score");
+    const streakLabel = document.querySelector("#streak");
     const progressTrack = document.querySelector("#progress-track");
     const progressFill = document.querySelector("#progress-fill");
     const questionTitle = document.querySelector("#question-title");
@@ -597,6 +609,7 @@
     const nextButton = document.querySelector("#next-button");
     let questionIndex = 0;
     let score = 0;
+    let streak = 0;
     let answered = false;
 
     function showQuestion() {
@@ -605,6 +618,7 @@
       countLabel.textContent = `Question ${questionIndex + 1} of ${questions.length}`;
       questionTitle.textContent = current.question;
       scoreLabel.textContent = score;
+      streakLabel.textContent = streak;
       progressTrack.setAttribute("aria-valuenow", questionIndex);
       progressFill.style.width = `${(questionIndex / questions.length) * 100}%`;
       feedback.textContent = "";
@@ -634,10 +648,14 @@
 
       if (selectedIndex === current.correct) {
         score += 1;
+        streak += 1;
         scoreLabel.textContent = score;
+        streakLabel.textContent = streak;
         feedback.textContent = `Correct! ${current.fact}`;
         feedback.classList.add("good");
       } else {
+        streak = 0;
+        streakLabel.textContent = streak;
         buttons[selectedIndex].classList.add("incorrect");
         feedback.textContent = `Not quite. ${current.fact}`;
         feedback.classList.add("bad");
@@ -667,6 +685,7 @@
     }
 
     document.querySelector("#start-button").addEventListener("click", () => {
+      streak = 0;
       intro.classList.add("hidden");
       quiz.classList.remove("hidden");
       showQuestion();
@@ -686,6 +705,7 @@
     document.querySelector("#restart-button").addEventListener("click", () => {
       questionIndex = 0;
       score = 0;
+      streak = 0;
       results.classList.add("hidden");
       quiz.classList.remove("hidden");
       showQuestion();
